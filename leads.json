@@ -1,0 +1,33 @@
+{
+  "_note": "Genuine external business contacts (food product inquiries/leads) extracted from Amr folder. Deduped by company. Excludes CVs, newsletters, auto-replies, NDR bounces, internal MAFI, scams, non-food vendor pitches.",
+  "leads": [
+    {"company":"HGE Foods","country":"Saudi Arabia","contact":"Lama Albalawi","email":"Lama@hgefoods.com","phone":"","nature":"Food business (buyer)","product":"Bulk freeze-dried fruits"},
+    {"company":"Alvas & ko","country":"Lithuania","contact":"Rolandas Saltupis (Head of Procurement)","email":"Rolandas.Saltupis@alvas.lt","phone":"","nature":"Distributor/wholesaler & snack manufacturer","product":"Freeze-dried fruits"},
+    {"company":"Al Safwa Group","country":"Egypt","contact":"Ali","email":"ALi_Hamed3@hotmail.com","phone":"01020958645","website":"www.al-safwagroup.com","nature":"","product":"Orange & lemon concentrate (Brix 60-65%)"},
+    {"company":"Max Mark for Food Investment","country":"Egypt","contact":"Yasmine Adel","email":"yasmine.adel@maxmark-inv.com","phone":"","nature":"Supplier/exporter fresh vegetables","product":"Cooperation - fresh vegetables"},
+    {"company":"Paradise Company for Fruit Drinks","country":"","contact":"","email":"paradiseco_import@outlook.com","phone":"","nature":"","product":"Orange juice concentrate (RFQ)"},
+    {"company":"Diamond Distributions","country":"USA","contact":"Ruby","email":"ruby@diamondgrocery.com","phone":"","nature":"Distributor","product":"NFC juices (samples + quotation)"},
+    {"company":"Sealand","country":"","contact":"","email":"welcome.sealand@gmail.com","phone":"","nature":"Importer & distributor","product":"Frozen strawberries, mango, puree"},
+    {"company":"Venkatesh Naturals","country":"UAE","contact":"","email":"sales.dubai@venkateshnaturals.com","phone":"","nature":"Supplier of ingredients","product":"Non-dairy creamer, fruit & veg powders, natural extracts"},
+    {"company":"Yayla Agro","country":"Turkey","contact":"Mert Palta","email":"mert.palta@yaylaagro.com","phone":"","nature":"","product":"Freeze-dried strawberries (15-25mm, 5 tons CIF Mersin)"},
+    {"company":"Noble Alliance Trade","country":"","contact":"Hojat","email":"supply.chain.expert@noblealliancetrade.com","phone":"","nature":"Supplier","product":"Fruit juice concentrates & tomato paste"},
+    {"company":"GreenField Sp. z o.o.","country":"Poland","contact":"Daniel Polak (Sourcing Development Manager)","email":"daniel.polak@greenfield.eu.com","phone":"","nature":"Manufacturer of natural ingredients","product":"Wet strawberry/blackberry/kiwi pomace & seeds (20-200 tons)"},
+    {"company":"EMCO spol. s r.o.","country":"Czech Republic","contact":"Jakub Fric (Strategic Procurement Specialist)","email":"Jakub.Fric@emco.cz","phone":"+420 771 257 818","nature":"Producer of breakfast cereals & snacks","product":"Conventional FD fruits"},
+    {"company":"Pelian Lab","country":"Greece","contact":"","email":"info@pelianlab.com","phone":"","nature":"Food company - healthy snacking","product":"Freeze-dried whole strawberries"},
+    {"company":"Reliance Egypt (Ecole Ducasse Cairo)","country":"Egypt","contact":"Amina Othman","email":"amina.othman@relianceegypt.com","phone":"","nature":"Culinary school launching in Egypt","product":"Supplier inquiry - range of products"},
+    {"company":"Litsupply","country":"Lithuania","contact":"Justinas","email":"justinas@litsupply.eu","phone":"","nature":"Supplier of food raw materials","product":"Freeze-dried strawberries, blueberries, raspberries, cherries"},
+    {"company":"Good Food Group","country":"Denmark","contact":"Mathias Bønløkke Andersen (Category Manager)","email":"man@goodfoodgroup.com","phone":"+45 53 53 82 25","nature":"","product":"Polaris meeting (FD/frozen fruit)"},
+    {"company":"CTD Sports","country":"USA","contact":"Peter","email":"peter@ctdsports.com","phone":"","nature":"","product":"Freeze-dried sliced strawberries (100-500kg)"},
+    {"company":"Ginju","country":"Canada","contact":"Patrick (Sales Manager)","email":"patrick@ginju.ca","phone":"+1 514 299 1111","website":"www.ginju.ca","nature":"","product":"Freeze-dried fruits / frozen mango"},
+    {"company":"Iberfruta Muerza S.A.","country":"Spain","contact":"Larami Crespo Dominguez","email":"larami.crespo@iberfruta.es","phone":"+34 948 692 977","nature":"","product":"Polaris meeting"},
+    {"company":"Alterra SA","country":"Greece","contact":"Nicoletta Tarfali (Export Manager)","email":"n.tarfali@alterra.gr","phone":"+30 23820 81820","nature":"","product":"Polaris meeting"},
+    {"company":"Nomad Foods","country":"","contact":"Emma Whitehouse (Senior Buyer - Vegetables)","email":"Emma.Whitehouse@nomadfoods.com","phone":"","nature":"","product":"Polaris meeting (vegetables)"},
+    {"company":"Bio Berry Poland Sp. z o.o.","country":"Poland","contact":"Marta Ziółkowska (Project Development Manager)","email":"marta@bioberry.com.pl","phone":"+48 535 330 803","nature":"","product":"Polaris meeting"},
+    {"company":"Mondi Polska","country":"Poland","contact":"Frederik Huyghe (Commercial Director)","email":"frederik.huyghe@mondipolska.pl","phone":"+32 473 93 20 00","nature":"","product":"Polaris meeting"},
+    {"company":"Back-Europ","country":"Germany","contact":"Marcel Quack (Senior Trader)","email":"Marcel.Quack@back-europ.de","phone":"+49 221 888966 49","nature":"","product":"Polaris meeting"},
+    {"company":"Otree Foods Co., Ltd.","country":"South Korea","contact":"Wontae Ahn (Senior Director, Global Purchasing & Business Development)","email":"wontaeahn@otreefoods.com","phone":"","nature":"","product":"Polaris meeting"},
+    {"company":"Skogsmat I Uddeholm AB","country":"Sweden","contact":"Anton Hoogenraad","email":"anton.hoogenraad@skogsmat.se","phone":"+31 10 282 70 18","nature":"","product":"Polaris meeting"},
+    {"company":"Bilow","country":"Poland","contact":"Kamil Krzywonos","email":"kamil.krzywonos@bilow.eu","phone":"","nature":"","product":"Freeze-dried strawberry slices, raspberries (offer request)"},
+    {"company":"Pico/GoodFood (Polaris) JQ International","country":"","contact":"Nico Decuyper","email":"ndecuyper@jqinternational.com","phone":"","nature":"Sourcing","product":"Polaris meeting"}
+  ]
+}
