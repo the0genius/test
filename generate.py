@@ -77,6 +77,63 @@ VIDEO_OPTIONS = {
 }
 
 
+# Reference media. The upload half is the official SDK's flow, same host and
+# same key: POST /files/generate-upload-url -> {upload_url, public_url}, PUT the
+# bytes to upload_url, then hand public_url to the generation.
+# How a model endpoint wants that URL NAMED is not in RUNBOOK.md, so the shape
+# is named per model below and swapping it is a one-word change.
+REFERENCE_SHAPES = {
+    # Shape the official SDK uses for its image-to-video input.
+    "input_images": lambda url: {
+        "input_images": [{"type": "image_url", "image_url": url}]
+    },
+    "image_url": lambda url: {"image_url": url},
+    "medias_start": lambda url: {
+        "medias": [{"role": "start_image", "value": url}]
+    },
+}
+
+REFERENCE_MODELS = {
+    "minimax-h3": "input_images",
+    "seedance-2.5": "input_images",
+}
+
+
+def accepts_reference(model):
+    return model in REFERENCE_MODELS
+
+
+def reference_payload(model, url):
+    shape = REFERENCE_SHAPES.get(REFERENCE_MODELS.get(model, ""))
+    return shape(url) if shape and url else {}
+
+
+def upload_link(content_type, headers):
+    response = requests.post(
+        BASE + "/files/generate-upload-url",
+        headers=headers,
+        json={"content_type": content_type},
+        timeout=30,
+    )
+    response.raise_for_status()
+    body = response.json()
+    return body["upload_url"], body["public_url"]
+
+
+def upload_bytes(data, content_type, headers):
+    """Presigned PUT. The upload URL carries its own auth — sending the API key
+    with the bytes can invalidate the signature, so only Content-Type goes."""
+    upload_to, public = upload_link(content_type, headers)
+    response = requests.put(
+        upload_to,
+        data=data,
+        headers={"Content-Type": content_type},
+        timeout=120,
+    )
+    response.raise_for_status()
+    return public
+
+
 def option_specs(model):
     return VIDEO_OPTIONS.get(model, {}).get("controls", [])
 

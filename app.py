@@ -18,12 +18,15 @@ from generate import (
     TERMINAL,
     asset_url,
     build_headers,
+    accepts_reference,
     check,
     clean_options,
     load_env,
     option_specs,
     prompt_limit,
+    reference_payload,
     submit,
+    upload_bytes,
 )
 
 
@@ -32,6 +35,8 @@ PORT = int(os.environ.get("PORT", "8000"))
 PASSWORD = os.environ.get("APP_PASSWORD", "")
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+MAX_UPLOAD = 20 * 1024 * 1024
 
 # Held in memory for the life of the process, never written to disk.
 KEY = {"id": "", "secret": ""}
@@ -134,6 +139,7 @@ class Handler(BaseHTTPRequestHandler):
                     "kind": kind(n),
                     "controls": option_specs(n),
                     "prompt_max": prompt_limit(n),
+                    "reference": accepts_reference(n),
                 } for n in MODELS],
                 "key_configured": bool(KEY["id"] and KEY["secret"]),
                 "key_from_env": bool(os.environ.get("HF_API_KEY_ID")),
@@ -152,6 +158,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(401, {"error": "not signed in"})
         if route.path == "/api/key":
             return self.set_key()
+        if route.path == "/api/upload":
+            return self.take_upload()
         if route.path == "/api/generate":
             return self.start_job()
         self.send_json(404, {"error": "not found"})
@@ -181,6 +189,29 @@ class Handler(BaseHTTPRequestHandler):
         KEY["id"], KEY["secret"] = key_id, key_secret
         self.send_json(200, {"key_configured": True})
 
+    def take_upload(self):
+        content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip()
+        if not content_type.startswith(("image/", "video/", "audio/")):
+            return self.send_json(400, {"error": "only an image, video or audio file"})
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0:
+            return self.send_json(400, {"error": "that file came through empty"})
+        if length > MAX_UPLOAD:
+            return self.send_json(400, {
+                "error": f"file is over the {MAX_UPLOAD // (1024 * 1024)} MB limit"
+            })
+        if not (KEY["id"] and KEY["secret"]):
+            return self.send_json(400, {"error": "no API key set"})
+
+        try:
+            url = upload_bytes(self.rfile.read(length), content_type,
+                               build_headers(KEY["id"], KEY["secret"]))
+        except requests.RequestException as err:
+            return self.send_json(502, {"error": describe(err)})
+        except (KeyError, ValueError):
+            return self.send_json(502, {"error": "the upload endpoint answered in an unexpected shape"})
+        self.send_json(200, {"url": url})
+
     def start_job(self):
         data = self.read_body()
         model = data.get("model")
@@ -199,6 +230,14 @@ class Handler(BaseHTTPRequestHandler):
             })
 
         options = clean_options(model, data.get("options"))
+
+        reference = (data.get("reference") or "").strip()
+        if reference:
+            if not accepts_reference(model):
+                return self.send_json(400, {"error": f"{model} does not take a reference"})
+            if not reference.startswith("https://"):
+                return self.send_json(400, {"error": "a reference must be an https URL"})
+            options.update(reference_payload(model, reference))
 
         try:
             job = submit(model, prompt, build_headers(KEY["id"], KEY["secret"]), options)

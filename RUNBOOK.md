@@ -80,3 +80,23 @@ GET `status_url` with the same authorization header until the status is
 `completed`, `failed`, `nsfw`, or `canceled`.
 
 Images are returned in `images[0].url`. Videos are returned in `video.url`.
+
+## reference media
+
+From the official SDK (`higgsfield-ai/higgsfield-js`), same host and same key:
+
+```text
+POST /files/generate-upload-url   {"content_type": "image/jpeg"}
+  -> {"upload_url": "...", "public_url": "..."}
+PUT  <upload_url>                 raw bytes, Content-Type only
+```
+
+The presigned `upload_url` carries its own auth — do not send the API key with
+the bytes. `public_url` is then what a generation refers to.
+
+The SDK's own endpoints wrap that URL as
+`input_images: [{"type": "image_url", "image_url": "..."}]`, but those are its
+`/v1/...` endpoints (`/v1/image2video/dop`, `/v1/text2image/soul`), not the
+model paths above. How these model endpoints want a reference named is
+**unverified** — `REFERENCE_SHAPES` in `generate.py` holds the candidates and
+`REFERENCE_MODELS` picks one per model.
