@@ -17,8 +17,7 @@ MODELS = {
     "ltx-2.5-pro": "/lightricks/ltx-2.5/text-to-video/pro",
     "kling-3.0": "/kling-video/v3.0/std/text-to-video",
     "veo-3.1-fast": "/veo3.1/fast/text-to-video",
-    # Path not in RUNBOOK.md — inferred from the pattern of the others.
-    # If this 404s, correct the path here and nothing else needs touching.
+    # Inferred, not from the original notes — see RUNBOOK.md for alternates.
     "seedance-2.5": "/bytedance/seedance-2.5/text-to-video",
 }
 

@@ -15,9 +15,22 @@ minimax-h3    POST /minimax/h3/text-to-video
 ltx-2.5-pro   POST /lightricks/ltx-2.5/text-to-video/pro
 kling-3.0     POST /kling-video/v3.0/std/text-to-video
 veo-3.1-fast  POST /veo3.1/fast/text-to-video
+seedance-2.5  POST /bytedance/seedance-2.5/text-to-video   (unverified)
 ```
 
 All of them accept a `prompt`.
+
+`seedance-2.5` was not in these notes. Its path follows the provider-first shape
+of `/minimax/h3/...` and `/lightricks/ltx-2.5/...`, but the other Bytedance and
+Google models here are named after the model family rather than the provider
+(`/nano-banana-2/lite/...`, `/veo3.1/fast/...`), so the alternatives worth trying
+if it does not resolve are:
+
+```text
+/seedance-2.5/text-to-video
+/seedance/v2.5/text-to-video
+/bytedance/seedance-2-5/text-to-video
+```
 
 ## qwen image
 
