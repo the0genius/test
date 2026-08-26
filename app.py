@@ -19,7 +19,10 @@ from generate import (
     asset_url,
     build_headers,
     check,
+    clean_options,
     load_env,
+    option_specs,
+    prompt_limit,
     submit,
 )
 
@@ -102,7 +105,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, {
                 "needs_password": bool(PASSWORD),
                 "authed": self.authed(),
-                "models": [{"name": n, "kind": kind(n)} for n in MODELS],
+                "models": [{
+                    "name": n,
+                    "kind": kind(n),
+                    "controls": option_specs(n),
+                    "prompt_max": prompt_limit(n),
+                } for n in MODELS],
                 "key_configured": bool(KEY["id"] and KEY["secret"]),
                 "key_from_env": bool(os.environ.get("HF_API_KEY_ID")),
             })
@@ -160,8 +168,16 @@ class Handler(BaseHTTPRequestHandler):
         if not (KEY["id"] and KEY["secret"]):
             return self.send_json(400, {"error": "no API key set"})
 
+        limit = prompt_limit(model)
+        if limit and len(prompt) > limit:
+            return self.send_json(400, {
+                "error": f"prompt is {len(prompt)} characters; {model} takes at most {limit}"
+            })
+
+        options = clean_options(model, data.get("options"))
+
         try:
-            job = submit(model, prompt, build_headers(KEY["id"], KEY["secret"]))
+            job = submit(model, prompt, build_headers(KEY["id"], KEY["secret"]), options)
         except requests.RequestException as err:
             return self.send_json(502, {"error": describe(err)})
 

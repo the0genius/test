@@ -54,6 +54,25 @@ the resulting asset URL. Endpoint details and raw `curl` equivalents are in
 By default the server binds to `127.0.0.1`, so nothing outside your machine can
 reach it. Your key and prompts go to `platform.higgsfield.ai` and nowhere else.
 
+## Video options
+
+Video models can carry extra settings. They appear under the model picker only
+for models that declare them, and every one starts at `default`:
+
+| model | settings | prompt limit |
+| --- | --- | --- |
+| `minimax-h3` | aspect ratio, duration (4–15s) | 2000 characters |
+| `kling-3.0` | aspect ratio, duration (3–15s) | — |
+| `veo-3.1-fast` | aspect ratio, duration (4/6/8s), quality | — |
+| `ltx-2.5-pro` | — | — |
+
+A setting left at `default` is **not sent**, so a request you did not touch is
+the same `{"prompt": ...}` it has always been. Values outside the allowed range
+are dropped rather than forwarded, and image models are untouched.
+
+All of it lives in `VIDEO_OPTIONS` at the top of `generate.py` — one table, one
+place to change a range, add a model, or set a prompt limit.
+
 ## Hosting it (so you can use it from a phone)
 
 The UI needs a host that allows outbound HTTPS. A published claude.ai artifact

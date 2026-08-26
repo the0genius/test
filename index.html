@@ -80,6 +80,8 @@
   .pill.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
   .actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+  .plen { float: right; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .plen.over { color: var(--bad); font-weight: 600; }
   .status { font-size: 13.5px; color: var(--muted); min-height: 20px; }
   .status.bad { color: var(--bad); }
   .dot {
@@ -126,8 +128,9 @@
       <label for="model">Model</label>
       <select id="model"></select>
     </div>
+    <div id="opts"></div>
     <div class="field">
-      <label for="prompt">Prompt</label>
+      <label for="prompt">Prompt <span id="plen" class="plen"></span></label>
       <textarea id="prompt" placeholder="Editorial portrait, hard flash, 35mm grain"></textarea>
     </div>
     <div class="actions">
@@ -197,6 +200,7 @@ async function boot() {
       $('model').append(group);
     }
     setKeyed(cfg.key_configured);
+    drawOptions();
     if (cfg.needs_password && !cfg.authed) {
       lock(true);
     } else if (cfg.key_from_env) {
@@ -244,6 +248,72 @@ $('saveKey').addEventListener('click', async () => {
   }
 });
 
+function modelSpec(name) {
+  return state.models.find((m) => m.name === name) || null;
+}
+
+// Controls render only for models that declare them, and each starts unset.
+function drawOptions() {
+  const box = $('opts');
+  box.innerHTML = '';
+  const controls = (modelSpec($('model').value) || {}).controls || [];
+  if (controls.length) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (const c of controls) row.append(buildControl(c));
+    box.append(row);
+  }
+  drawCount();
+}
+
+function buildControl(c) {
+  const wrap = document.createElement('div');
+  wrap.className = 'field';
+  const id = 'opt-' + c.name;
+  const label = document.createElement('label');
+  label.htmlFor = id;
+  label.textContent = c.label + (c.unit ? ' (' + c.unit + ')' : '');
+  let field;
+  if (c.kind === 'number' && !c.options) {
+    field = document.createElement('input');
+    field.type = 'number';
+    field.inputMode = 'numeric';
+    if (c.min !== undefined) field.min = c.min;
+    if (c.max !== undefined) field.max = c.max;
+    field.placeholder = c.min !== undefined ? c.min + '\u2013' + c.max : 'default';
+  } else {
+    field = document.createElement('select');
+    field.append(new Option('default', ''));
+    for (const o of c.options) field.append(new Option(String(o), String(o)));
+  }
+  field.id = id;
+  field.dataset.opt = c.name;
+  wrap.append(label, field);
+  return wrap;
+}
+
+// Anything still blank is left out of the request entirely.
+function collectOptions() {
+  const chosen = {};
+  for (const el of document.querySelectorAll('[data-opt]')) {
+    const value = el.value.trim();
+    if (value !== '') chosen[el.dataset.opt] = value;
+  }
+  return chosen;
+}
+
+function drawCount() {
+  const max = (modelSpec($('model').value) || {}).prompt_max;
+  const el = $('plen');
+  if (!max) { el.textContent = ''; el.classList.remove('over'); return; }
+  const used = $('prompt').value.trim().length;
+  el.textContent = used + ' / ' + max;
+  el.classList.toggle('over', used > max);
+}
+
+$('model').addEventListener('change', drawOptions);
+$('prompt').addEventListener('input', drawCount);
+
 $('go').addEventListener('click', async () => {
   if (state.busy) return;
   const model = $('model').value;
@@ -251,6 +321,10 @@ $('go').addEventListener('click', async () => {
   if (state.locked) return say('Sign in first.', true);
   if (!state.keyed) return say('Add an API key first.', true);
   if (!prompt) return say('Write a prompt first.', true);
+  const max = (modelSpec(model) || {}).prompt_max;
+  if (max && prompt.length > max) {
+    return say('Prompt is ' + prompt.length + ' characters; ' + model + ' takes at most ' + max + '.', true);
+  }
 
   state.busy = true;
   $('go').disabled = true;
@@ -262,7 +336,7 @@ $('go').addEventListener('click', async () => {
     const job = await api('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt }),
+      body: JSON.stringify({ model, prompt, options: collectOptions() }),
     });
     await poll(job.status_url, model);
   } catch (err) {

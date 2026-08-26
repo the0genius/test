@@ -23,6 +23,76 @@ TERMINAL = {"completed", "failed", "nsfw", "canceled"}
 
 BASE = "https://platform.higgsfield.ai"
 
+# Optional extras for the video models, taken from the model catalogue. Every
+# control defaults to unset and an unset control is never sent, so a request
+# nobody touched is the same {"prompt": ...} it has always been.
+# ltx-2.5-pro is absent on purpose: no published parameters to go on.
+VIDEO_OPTIONS = {
+    "minimax-h3": {
+        "prompt_max": 2000,
+        "controls": [
+            {"name": "aspect_ratio", "label": "Aspect ratio", "kind": "choice",
+             "options": ["auto", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]},
+            {"name": "duration", "label": "Duration", "kind": "number",
+             "min": 4, "max": 15, "unit": "s"},
+        ],
+    },
+    "kling-3.0": {
+        "controls": [
+            {"name": "aspect_ratio", "label": "Aspect ratio", "kind": "choice",
+             "options": ["16:9", "9:16", "1:1"]},
+            {"name": "duration", "label": "Duration", "kind": "number",
+             "min": 3, "max": 15, "unit": "s"},
+        ],
+    },
+    "veo-3.1-fast": {
+        "controls": [
+            {"name": "aspect_ratio", "label": "Aspect ratio", "kind": "choice",
+             "options": ["16:9", "9:16"]},
+            {"name": "duration", "label": "Duration", "kind": "number",
+             "options": [4, 6, 8], "unit": "s"},
+            {"name": "quality", "label": "Quality", "kind": "choice",
+             "options": ["basic", "high", "ultra"]},
+        ],
+    },
+}
+
+
+def option_specs(model):
+    return VIDEO_OPTIONS.get(model, {}).get("controls", [])
+
+
+def prompt_limit(model):
+    return VIDEO_OPTIONS.get(model, {}).get("prompt_max")
+
+
+def clean_options(model, given):
+    """Keep only controls this model declares, with values it allows."""
+    picked = {}
+    if not isinstance(given, dict):
+        return picked
+    for spec in option_specs(model):
+        raw = given.get(spec["name"])
+        if raw is None or raw == "":
+            continue
+        if spec["kind"] == "number":
+            try:
+                value = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if spec.get("options") and value not in spec["options"]:
+                continue
+            if "min" in spec and value < spec["min"]:
+                continue
+            if "max" in spec and value > spec["max"]:
+                continue
+        else:
+            value = str(raw)
+            if value not in spec["options"]:
+                continue
+        picked[spec["name"]] = value
+    return picked
+
 
 def build_headers(key_id, key_secret):
     return {
@@ -31,11 +101,13 @@ def build_headers(key_id, key_secret):
     }
 
 
-def submit(model, prompt, headers):
+def submit(model, prompt, headers, options=None):
+    payload = {"prompt": prompt}
+    payload.update(options or {})
     response = requests.post(
         BASE + MODELS[model],
         headers=headers,
-        json={"prompt": prompt},
+        json=payload,
         timeout=60,
     )
     response.raise_for_status()
