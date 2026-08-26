@@ -60,28 +60,22 @@ The UI needs a host that allows outbound HTTPS. A published claude.ai artifact
 cannot do this job — its sandbox blocks requests to every external host, so a
 page there can never reach `platform.higgsfield.ai` whatever key it holds.
 
-There is a `Dockerfile`, and `render.yaml` for a one-click Render blueprint.
-Anywhere that runs a container works the same way. Set three environment
-variables:
+One tap, no configuration:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/the0genius/test)
+
+Sign in with GitHub, accept the defaults, and Render hands back an
+`https://….onrender.com` URL. Open it, type your key id and secret into the
+page, and generate. The key lives in the server's memory until the instance
+restarts, and never touches the browser after you submit it.
+
+### Optional hardening
 
 | variable | why |
 | --- | --- |
-| `APP_PASSWORD` | **required** — gates the UI |
-| `HF_API_KEY_ID` | your Higgsfield key id |
-| `HF_API_KEY_SECRET` | your Higgsfield key secret |
+| `APP_PASSWORD` | puts a sign-in step in front of the UI |
+| `HF_API_KEY_ID` / `HF_API_KEY_SECRET` | preload the key so nobody has to type it |
 
-With the key in the environment, it never appears in the page at all — the
-browser only ever sends prompts.
-
-**The password is not optional.** A reachable instance holding your API key is a
-way for anyone with the URL to spend your credit, so the app refuses to start
-when `HOST` is anything but loopback and `APP_PASSWORD` is unset. Sessions are
-HttpOnly cookies, `Secure` behind an HTTPS edge, and wrong guesses are throttled
-to ten per five minutes.
-
-## Note on the upstream repository
-
-Upstream ships a committed `.env` holding live service-account credentials that
-its README describes as copied from elsewhere, with the author noting they did
-not know when the key would be rotated. Those credentials were deliberately not
-carried over here — this copy authenticates only with a key you supply.
+Preloading the key on a public URL without `APP_PASSWORD` would let anyone who
+finds the URL spend your credit, so the app refuses to start in that one
+combination. Everything else runs.

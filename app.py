@@ -200,16 +200,23 @@ def main():
     KEY["id"] = os.environ.get("HF_API_KEY_ID", "")
     KEY["secret"] = os.environ.get("HF_API_KEY_SECRET", "")
 
-    # A reachable instance holding an API key must not be open to the world:
-    # anyone with the URL could spend the account's credit.
-    if HOST not in LOOPBACK and not PASSWORD:
-        print("refusing to start: HOST is not loopback and APP_PASSWORD is unset.")
-        print("Set APP_PASSWORD to something long before exposing this, or bind to 127.0.0.1.")
+    # An open instance that already holds a key hands it to anyone with the
+    # URL. An open instance with no key just shows an empty form, so allow it.
+    public = HOST not in LOOPBACK
+    if public and not PASSWORD and KEY["id"]:
+        print("refusing to start: a public instance with a key baked in and no")
+        print("APP_PASSWORD lets anyone with the URL spend your credit.")
+        print("Either set APP_PASSWORD, or drop the key vars and type the key in the page.")
         return 1
 
     where = "http://127.0.0.1:%d" % PORT if HOST in LOOPBACK else "port %d" % PORT
     print(f"media-inference-worker UI  ->  {where}")
-    print("password required" if PASSWORD else "no password (loopback only)")
+    if PASSWORD:
+        print("password required")
+    elif public:
+        print("open to anyone with the URL — the key you type is live until restart")
+    else:
+        print("no password (loopback only)")
     if KEY["id"] and KEY["secret"]:
         print("key loaded from the environment")
     else:
