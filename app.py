@@ -44,6 +44,21 @@ def kind(model):
     return "video" if "text-to-video" in MODELS[model] else "image"
 
 
+def detail_of(payload, limit=400):
+    """Whatever explanation the API put in a body or a job result."""
+    if isinstance(payload, str):
+        return payload.strip()[:limit]
+    if not isinstance(payload, dict):
+        return str(payload)[:limit] if payload else ""
+    for key in ("detail", "message", "error", "reason", "failure_reason", "description"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()[:limit]
+        if isinstance(value, (dict, list)) and value:
+            return json.dumps(value)[:limit]
+    return ""
+
+
 def describe(err):
     response = getattr(err, "response", None)
     if response is None:
@@ -54,6 +69,13 @@ def describe(err):
         return "rate limited, or the account is out of credit"
     if response.status_code == 404:
         return "no endpoint at that path — the model's path in MODELS looks wrong"
+    try:
+        body = response.json()
+    except ValueError:
+        body = (response.text or "").strip()
+    said = detail_of(body)
+    if said:
+        return f"the API returned {response.status_code}: {said}"
     return f"the API returned {response.status_code}"
 
 
@@ -209,7 +231,15 @@ class Handler(BaseHTTPRequestHandler):
             except (KeyError, IndexError):
                 payload["error"] = "finished, but the response carried no asset"
         elif payload["done"]:
-            payload["error"] = result.get("error") or status
+            said = detail_of(result)
+            leftover = {k: v for k, v in result.items()
+                        if k not in ("status", "id", "request_id", "images", "video")}
+            if said:
+                payload["error"] = f"{status}: {said}"
+            elif leftover:
+                payload["error"] = f"{status}: {json.dumps(leftover)[:400]}"
+            else:
+                payload["error"] = f"{status} (the API gave no reason)"
         self.send_json(200, payload)
 
 
