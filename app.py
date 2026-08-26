@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+import hmac
 import json
 import os
+import secrets
+import time
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -20,11 +24,17 @@ from generate import (
 )
 
 
-HOST = "127.0.0.1"
+HOST = os.environ.get("HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "8000"))
+PASSWORD = os.environ.get("APP_PASSWORD", "")
+
+LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 
 # Held in memory for the life of the process, never written to disk.
 KEY = {"id": "", "secret": ""}
+
+SESSIONS = set()
+ATTEMPTS = []
 
 
 def kind(model):
@@ -42,23 +52,46 @@ def describe(err):
     return f"the API returned {response.status_code}"
 
 
+def throttled():
+    now = time.time()
+    ATTEMPTS[:] = [t for t in ATTEMPTS if now - t < 300]
+    return len(ATTEMPTS) >= 10
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
-    def send_json(self, status, payload):
-        self.send_bytes(status, json.dumps(payload).encode(), "application/json")
+    def send_json(self, status, payload, cookie=None):
+        self.send_bytes(status, json.dumps(payload).encode(), "application/json", cookie)
 
-    def send_bytes(self, status, body, content_type):
+    def send_bytes(self, status, body, content_type, cookie=None):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
         self.end_headers()
         self.wfile.write(body)
 
     def read_body(self):
         length = int(self.headers.get("Content-Length") or 0)
+        if length > 64_000:
+            return {}
         return json.loads(self.rfile.read(length) or b"{}")
+
+    def secure(self):
+        # Platforms terminate TLS at the edge and forward this header.
+        return self.headers.get("X-Forwarded-Proto", "").split(",")[0].strip() == "https"
+
+    def authed(self):
+        if not PASSWORD:
+            return True
+        jar = SimpleCookie(self.headers.get("Cookie", ""))
+        token = jar["sr_session"].value if "sr_session" in jar else ""
+        return bool(token) and token in SESSIONS
 
     def do_GET(self):
         route = urlparse(self.path)
@@ -67,20 +100,45 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_bytes(200, page, "text/html; charset=utf-8")
         if route.path == "/api/config":
             return self.send_json(200, {
+                "needs_password": bool(PASSWORD),
+                "authed": self.authed(),
                 "models": [{"name": n, "kind": kind(n)} for n in MODELS],
                 "key_configured": bool(KEY["id"] and KEY["secret"]),
+                "key_from_env": bool(os.environ.get("HF_API_KEY_ID")),
             })
+        if not self.authed():
+            return self.send_json(401, {"error": "not signed in"})
         if route.path == "/api/status":
             return self.get_status(parse_qs(route.query).get("url", [""])[0])
         self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
         route = urlparse(self.path)
+        if route.path == "/api/login":
+            return self.login()
+        if not self.authed():
+            return self.send_json(401, {"error": "not signed in"})
         if route.path == "/api/key":
             return self.set_key()
         if route.path == "/api/generate":
             return self.start_job()
         self.send_json(404, {"error": "not found"})
+
+    def login(self):
+        if not PASSWORD:
+            return self.send_json(400, {"error": "this instance has no password set"})
+        if throttled():
+            return self.send_json(429, {"error": "too many attempts — wait a few minutes"})
+        given = (self.read_body().get("password") or "")
+        if not hmac.compare_digest(given, PASSWORD):
+            ATTEMPTS.append(time.time())
+            return self.send_json(401, {"error": "wrong password"})
+        token = secrets.token_urlsafe(32)
+        SESSIONS.add(token)
+        flags = "HttpOnly; SameSite=Strict; Path=/; Max-Age=43200"
+        if self.secure():
+            flags += "; Secure"
+        self.send_json(200, {"authed": True}, cookie=f"sr_session={token}; {flags}")
 
     def set_key(self):
         data = self.read_body()
@@ -142,11 +200,20 @@ def main():
     KEY["id"] = os.environ.get("HF_API_KEY_ID", "")
     KEY["secret"] = os.environ.get("HF_API_KEY_SECRET", "")
 
-    print(f"media-inference-worker UI  ->  http://{HOST}:{PORT}")
+    # A reachable instance holding an API key must not be open to the world:
+    # anyone with the URL could spend the account's credit.
+    if HOST not in LOOPBACK and not PASSWORD:
+        print("refusing to start: HOST is not loopback and APP_PASSWORD is unset.")
+        print("Set APP_PASSWORD to something long before exposing this, or bind to 127.0.0.1.")
+        return 1
+
+    where = "http://127.0.0.1:%d" % PORT if HOST in LOOPBACK else "port %d" % PORT
+    print(f"media-inference-worker UI  ->  {where}")
+    print("password required" if PASSWORD else "no password (loopback only)")
     if KEY["id"] and KEY["secret"]:
         print("key loaded from the environment")
     else:
-        print("no key found — paste one into the page (it stays on this machine)")
+        print("no key found — paste one into the page")
 
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     try:

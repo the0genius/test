@@ -101,7 +101,14 @@
     <h1>media inference worker</h1>
     <span class="pill" id="keyPill">checking…</span>
   </header>
-  <p class="sub">Running on your machine. Your key and prompts go straight to platform.higgsfield.ai — nowhere else.</p>
+  <p class="sub">Your key stays on the server and never reaches this page. Prompts go straight to platform.higgsfield.ai — nowhere else.</p>
+
+  <section class="panel" id="lockPanel" hidden>
+    <h2>Sign in</h2>
+    <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password"></div>
+    <div class="actions"><button id="signIn">Sign in</button></div>
+    <p class="note">Set by whoever deployed this instance, via the <code>APP_PASSWORD</code> environment variable.</p>
+  </section>
 
   <section class="panel" id="keyPanel" hidden>
     <h2>API key</h2>
@@ -138,13 +145,13 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const state = { models: [], keyed: false, busy: false };
+const state = { models: [], keyed: false, busy: false, locked: false };
 
 function setKeyed(on) {
   state.keyed = on;
   $('keyPill').textContent = on ? 'key set' : 'no key';
   $('keyPill').classList.toggle('on', on);
-  $('keyPanel').hidden = on;
+  $('keyPanel').hidden = on || state.locked;
 }
 
 function say(text, bad) {
@@ -165,6 +172,17 @@ async function api(path, options) {
   return data;
 }
 
+function lock(on) {
+  state.locked = on;
+  $('lockPanel').hidden = !on;
+  $('keyPanel').hidden = on || state.keyed;
+  $('go').disabled = on;
+  if (on) {
+    $('keyPill').textContent = 'locked';
+    $('keyPill').classList.remove('on');
+  }
+}
+
 async function boot() {
   try {
     const cfg = await api('/api/config');
@@ -179,10 +197,33 @@ async function boot() {
       $('model').append(group);
     }
     setKeyed(cfg.key_configured);
+    if (cfg.needs_password && !cfg.authed) {
+      lock(true);
+    } else if (cfg.key_from_env) {
+      $('keyPanel').hidden = true;
+    }
   } catch (err) {
     say(err.message, true);
   }
 }
+
+$('signIn').addEventListener('click', async () => {
+  const password = $('pw').value;
+  if (!password) return say('Enter the password.', true);
+  try {
+    await api('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    $('pw').value = '';
+    lock(false);
+    say('');
+    await boot();
+  } catch (err) {
+    say(err.message, true);
+  }
+});
 
 $('saveKey').addEventListener('click', async () => {
   const key_id = $('keyId').value.trim();
@@ -207,6 +248,7 @@ $('go').addEventListener('click', async () => {
   if (state.busy) return;
   const model = $('model').value;
   const prompt = $('prompt').value.trim();
+  if (state.locked) return say('Sign in first.', true);
   if (!state.keyed) return say('Add an API key first.', true);
   if (!prompt) return say('Write a prompt first.', true);
 

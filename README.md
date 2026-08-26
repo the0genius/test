@@ -51,8 +51,33 @@ Both paths submit the job, poll until it reaches a terminal state, and give you
 the resulting asset URL. Endpoint details and raw `curl` equivalents are in
 [`RUNBOOK.md`](RUNBOOK.md).
 
-The server binds to `127.0.0.1` only, so nothing outside your machine can reach
-it. Your key and prompts go to `platform.higgsfield.ai` and nowhere else.
+By default the server binds to `127.0.0.1`, so nothing outside your machine can
+reach it. Your key and prompts go to `platform.higgsfield.ai` and nowhere else.
+
+## Hosting it (so you can use it from a phone)
+
+The UI needs a host that allows outbound HTTPS. A published claude.ai artifact
+cannot do this job — its sandbox blocks requests to every external host, so a
+page there can never reach `platform.higgsfield.ai` whatever key it holds.
+
+There is a `Dockerfile`, and `render.yaml` for a one-click Render blueprint.
+Anywhere that runs a container works the same way. Set three environment
+variables:
+
+| variable | why |
+| --- | --- |
+| `APP_PASSWORD` | **required** — gates the UI |
+| `HF_API_KEY_ID` | your Higgsfield key id |
+| `HF_API_KEY_SECRET` | your Higgsfield key secret |
+
+With the key in the environment, it never appears in the page at all — the
+browser only ever sends prompts.
+
+**The password is not optional.** A reachable instance holding your API key is a
+way for anyone with the URL to spend your credit, so the app refuses to start
+when `HOST` is anything but loopback and `APP_PASSWORD` is unset. Sessions are
+HttpOnly cookies, `Secure` behind an HTTPS edge, and wrong guesses are throttled
+to ten per five minutes.
 
 ## Note on the upstream repository
 
