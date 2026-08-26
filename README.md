@@ -18,6 +18,19 @@ keep credentials out of commits.
 
 ## Usage
 
+Web UI — start the local server and open the printed address:
+
+```bash
+python app.py            # -> http://127.0.0.1:8000   (PORT=... to change)
+```
+
+Pick a model, write a prompt, and it submits the job, polls it, and shows the
+result inline. If no key is set the page shows a field for one; a key entered
+there is held in memory by the local server for as long as it runs, and is
+never written to disk.
+
+Command line:
+
 ```bash
 python generate.py qwen-image-3 "Editorial portrait, hard flash, 35mm grain"
 ```
@@ -34,9 +47,12 @@ Available models:
 | `kling-3.0` | video |
 | `veo-3.1-fast` | video |
 
-The script submits the job, polls until it reaches a terminal state, and prints
+Both paths submit the job, poll until it reaches a terminal state, and give you
 the resulting asset URL. Endpoint details and raw `curl` equivalents are in
 [`RUNBOOK.md`](RUNBOOK.md).
+
+The server binds to `127.0.0.1` only, so nothing outside your machine can reach
+it. Your key and prompts go to `platform.higgsfield.ai` and nowhere else.
 
 ## Note on the upstream repository
 
