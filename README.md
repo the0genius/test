@@ -61,10 +61,16 @@ for models that declare them, and every one starts at `default`:
 
 | model | settings | prompt limit |
 | --- | --- | --- |
-| `minimax-h3` | aspect ratio, duration (4–15s) | 2000 characters |
+| `minimax-h3` | aspect ratio, duration (4–15s), quality (`2K`) | 2000 characters |
+| `seedance-2.5` | aspect ratio, duration (4–30s), quality (480p/720p/1080p), audio, bitrate | — |
 | `kling-3.0` | aspect ratio, duration (3–15s) | — |
 | `veo-3.1-fast` | aspect ratio, duration (4/6/8s), quality | — |
 | `ltx-2.5-pro` | — | — |
+
+Adding a model is the same two edits the existing ones use: a path in `MODELS`,
+and, if it takes settings, an entry in `VIDEO_OPTIONS`. `seedance-2.5`'s endpoint
+path is not in `RUNBOOK.md` and was inferred from the pattern of the others — if
+it returns "no endpoint at that path", correct the one line in `MODELS`.
 
 A setting left at `default` is **not sent**, so a request you did not touch is
 the same `{"prompt": ...}` it has always been. Values outside the allowed range

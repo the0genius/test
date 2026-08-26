@@ -274,7 +274,10 @@ function buildControl(c) {
   label.htmlFor = id;
   label.textContent = c.label + (c.unit ? ' (' + c.unit + ')' : '');
   let field;
-  if (c.kind === 'number' && !c.options) {
+  if (c.kind === 'bool') {
+    field = document.createElement('select');
+    field.append(new Option('default', ''), new Option('on', 'true'), new Option('off', 'false'));
+  } else if (c.kind === 'number' && !c.options) {
     field = document.createElement('input');
     field.type = 'number';
     field.inputMode = 'numeric';

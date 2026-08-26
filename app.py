@@ -52,6 +52,8 @@ def describe(err):
         return "the API rejected the key — check it is correct and still active"
     if response.status_code == 429:
         return "rate limited, or the account is out of credit"
+    if response.status_code == 404:
+        return "no endpoint at that path — the model's path in MODELS looks wrong"
     return f"the API returned {response.status_code}"
 
 

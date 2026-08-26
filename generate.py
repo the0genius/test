@@ -17,6 +17,9 @@ MODELS = {
     "ltx-2.5-pro": "/lightricks/ltx-2.5/text-to-video/pro",
     "kling-3.0": "/kling-video/v3.0/std/text-to-video",
     "veo-3.1-fast": "/veo3.1/fast/text-to-video",
+    # Path not in RUNBOOK.md — inferred from the pattern of the others.
+    # If this 404s, correct the path here and nothing else needs touching.
+    "seedance-2.5": "/bytedance/seedance-2.5/text-to-video",
 }
 
 TERMINAL = {"completed", "failed", "nsfw", "canceled"}
@@ -35,6 +38,23 @@ VIDEO_OPTIONS = {
              "options": ["auto", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]},
             {"name": "duration", "label": "Duration", "kind": "number",
              "min": 4, "max": 15, "unit": "s"},
+            # The catalogue lists one tier for this model; kept so the control
+            # is explicit rather than missing.
+            {"name": "resolution", "label": "Quality", "kind": "choice",
+             "options": ["2K"]},
+        ],
+    },
+    "seedance-2.5": {
+        "controls": [
+            {"name": "aspect_ratio", "label": "Aspect ratio", "kind": "choice",
+             "options": ["auto", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]},
+            {"name": "duration", "label": "Duration", "kind": "number",
+             "min": 4, "max": 30, "unit": "s"},
+            {"name": "resolution", "label": "Quality", "kind": "choice",
+             "options": ["480p", "720p", "1080p"]},
+            {"name": "generate_audio", "label": "Audio", "kind": "bool"},
+            {"name": "bitrate_mode", "label": "Bitrate", "kind": "choice",
+             "options": ["standard", "high"]},
         ],
     },
     "kling-3.0": {
@@ -85,6 +105,13 @@ def clean_options(model, given):
             if "min" in spec and value < spec["min"]:
                 continue
             if "max" in spec and value > spec["max"]:
+                continue
+        elif spec["kind"] == "bool":
+            if raw in (True, "true"):
+                value = True
+            elif raw in (False, "false"):
+                value = False
+            else:
                 continue
         else:
             value = str(raw)
