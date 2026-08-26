@@ -2,8 +2,18 @@
 
 ```text
 base: https://platform.higgsfield.ai
-auth: Authorization: Key <key_id>:<secret>
+auth: Authorization: Key <key_id>:<secret>     <- the model paths below
+      hf-api-key: <key_id>                     <- the /files and /v1 paths
+      hf-secret: <secret>
 ```
+
+One host, one key, **two auth schemes**. The model endpoints below take the
+`Authorization` header. The `/files/...` and `/v1/...` endpoints (the ones the
+official SDK drives) take the `hf-api-key` / `hf-secret` pair instead, and
+answer 401 to the other one.
+
+`403` on these endpoints means **out of credits**, not a bad key — the SDK maps
+it to its NotEnoughCreditsError.
 
 ## models
 
@@ -83,7 +93,8 @@ Images are returned in `images[0].url`. Videos are returned in `video.url`.
 
 ## reference media
 
-From the official SDK (`higgsfield-ai/higgsfield-js`), same host and same key:
+From the official SDK (`higgsfield-ai/higgsfield-js`), same host and same key,
+but with the `hf-api-key` / `hf-secret` headers rather than `Authorization`:
 
 ```text
 POST /files/generate-upload-url   {"content_type": "image/jpeg"}

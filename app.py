@@ -68,8 +68,10 @@ def describe(err):
     response = getattr(err, "response", None)
     if response is None:
         return f"could not reach {BASE}"
-    if response.status_code in (401, 403):
+    if response.status_code == 401:
         return "the API rejected the key — check it is correct and still active"
+    if response.status_code == 403:
+        return "not enough credits on the account for this generation"
     if response.status_code == 429:
         return "rate limited, or the account is out of credit"
     if response.status_code == 404:
@@ -205,7 +207,7 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             url = upload_bytes(self.rfile.read(length), content_type,
-                               build_headers(KEY["id"], KEY["secret"]))
+                               KEY["id"], KEY["secret"])
         except requests.RequestException as err:
             return self.send_json(502, {"error": describe(err)})
         except (KeyError, ValueError):

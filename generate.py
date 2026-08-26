@@ -108,10 +108,21 @@ def reference_payload(model, url):
     return shape(url) if shape and url else {}
 
 
-def upload_link(content_type, headers):
+def build_upload_headers(key_id, key_secret):
+    """The /files and /v1 endpoints take their own header pair. The model paths
+    in MODELS use the Authorization scheme in build_headers instead — the same
+    key, two schemes, and the wrong one gets a 401."""
+    return {
+        "hf-api-key": key_id,
+        "hf-secret": key_secret,
+        "Content-Type": "application/json",
+    }
+
+
+def upload_link(content_type, key_id, key_secret):
     response = requests.post(
         BASE + "/files/generate-upload-url",
-        headers=headers,
+        headers=build_upload_headers(key_id, key_secret),
         json={"content_type": content_type},
         timeout=30,
     )
@@ -120,10 +131,10 @@ def upload_link(content_type, headers):
     return body["upload_url"], body["public_url"]
 
 
-def upload_bytes(data, content_type, headers):
-    """Presigned PUT. The upload URL carries its own auth — sending the API key
+def upload_bytes(data, content_type, key_id, key_secret):
+    """Presigned PUT. The upload URL carries its own auth — sending credentials
     with the bytes can invalidate the signature, so only Content-Type goes."""
-    upload_to, public = upload_link(content_type, headers)
+    upload_to, public = upload_link(content_type, key_id, key_secret)
     response = requests.put(
         upload_to,
         data=data,
